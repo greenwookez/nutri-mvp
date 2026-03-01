@@ -6,13 +6,30 @@ const { newDb } = require('pg-mem');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATABASE_URL =
+let DATABASE_URL =
   process.env.DATABASE_URL ||
   process.env.POSTGRES_URL ||
   process.env.POSTGRES_PRISMA_URL ||
   process.env.SUPABASE_DB_URL;
 const USE_MEMORY_DB = !DATABASE_URL;
 const SKIP_DB_BOOTSTRAP = process.env.NUTRI_SKIP_DB_BOOTSTRAP === 'true';
+
+function normalizePgUrl(url) {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    const sslmode = u.searchParams.get('sslmode');
+    const hasCompat = u.searchParams.has('uselibpqcompat');
+    if ((sslmode === 'prefer' || sslmode === 'require' || sslmode === 'verify-ca') && !hasCompat) {
+      u.searchParams.set('uselibpqcompat', 'true');
+    }
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+DATABASE_URL = normalizePgUrl(DATABASE_URL);
 
 if (USE_MEMORY_DB) {
   console.warn('[nutri-mvp] DATABASE_URL is not set. Using local in-memory PostgreSQL (pg-mem) for dev/testing.');
@@ -24,9 +41,10 @@ if (USE_MEMORY_DB) {
   const pgMem = mem.adapters.createPg();
   pool = new pgMem.Pool();
 } else {
+  // Let pg parse SSL settings from DATABASE_URL/POSTGRES_URL.
+  // We avoid overriding ssl object here to keep behavior aligned with provider URLs.
   pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: process.env.PGSSLMODE === 'disable' ? false : { rejectUnauthorized: false }
+    connectionString: DATABASE_URL
   });
 }
 
