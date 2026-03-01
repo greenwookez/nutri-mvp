@@ -1,0 +1,12 @@
+<!-- Add these keys to your app Info.plist -->
+<key>NSHealthShareUsageDescription</key>
+<string>Nutri MVP reads Active Energy to calculate net calories and sync daily activity.</string>
+<key>NSHealthUpdateUsageDescription</key>
+<string>Nutri MVP does not write Health data in this PoC. This key is optional.</string>
+
+<!-- Only for local HTTP testing (recommended: use HTTPS in production) -->
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+</dict>

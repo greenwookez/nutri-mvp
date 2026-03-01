@@ -13,6 +13,7 @@ let DATABASE_URL =
   process.env.SUPABASE_DB_URL;
 const USE_MEMORY_DB = !DATABASE_URL;
 const SKIP_DB_BOOTSTRAP = process.env.NUTRI_SKIP_DB_BOOTSTRAP === 'true';
+const ACTIVITY_API_KEY = process.env.ACTIVITY_API_KEY || '';
 
 function normalizePgUrl(url) {
   if (!url) return url;
@@ -160,6 +161,15 @@ async function initDb() {
     )
   `);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS daily_activity (
+      date DATE PRIMARY KEY,
+      active_calories REAL NOT NULL DEFAULT 0,
+      source TEXT NOT NULL DEFAULT 'manual',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
   if (USE_MEMORY_DB) {
     await seedDevData();
   }
@@ -171,6 +181,15 @@ function dateShift(baseDate, shiftDays) {
   const d = new Date(baseDate);
   d.setDate(d.getDate() + shiftDays);
   return d.toISOString().slice(0, 10);
+}
+
+function requireActivityApiKey(req, res, next) {
+  if (!ACTIVITY_API_KEY) return next();
+  const provided = req.header('x-api-key');
+  if (provided !== ACTIVITY_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized: invalid API key' });
+  }
+  return next();
 }
 
 const FOOD_ALIASES = {
@@ -479,6 +498,72 @@ app.post('/api/log-text', async (req, res) => {
   }
 });
 
+
+app.post('/api/activity/active-calories', requireActivityApiKey, async (req, res) => {
+  try {
+    await initDb();
+    const { date, activeCalories, source } = req.body;
+    const entryDate = date || new Date().toISOString().slice(0, 10);
+    const calories = Number(activeCalories);
+
+    if (!Number.isFinite(calories) || calories < 0) {
+      return res.status(400).json({ error: 'activeCalories must be a non-negative number' });
+    }
+
+    const activitySource = String(source || 'ios-healthkit').slice(0, 100);
+
+    const { rows } = await query(
+      `INSERT INTO daily_activity (date, active_calories, source, updated_at)
+       VALUES ($1::date, $2, $3, NOW())
+       ON CONFLICT (date)
+       DO UPDATE SET
+         active_calories = EXCLUDED.active_calories,
+         source = EXCLUDED.source,
+         updated_at = NOW()
+       RETURNING active_calories, source, updated_at`,
+      [entryDate, calories, activitySource]
+    );
+
+    res.status(200).json({
+      message: 'Active calories synced',
+      activity: {
+        date: entryDate,
+        activeCalories: Number(rows[0].active_calories),
+        source: rows[0].source,
+        updatedAt: rows[0].updated_at
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to sync active calories' });
+  }
+});
+
+app.get('/api/activity/day', async (req, res) => {
+  try {
+    await initDb();
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const { rows } = await query(
+      `SELECT active_calories, source, updated_at
+       FROM daily_activity
+       WHERE date = $1::date`,
+      [date]
+    );
+
+    if (!rows[0]) {
+      return res.json({ date, activeCalories: 0, source: null, updatedAt: null });
+    }
+
+    return res.json({
+      date,
+      activeCalories: Number(rows[0].active_calories),
+      source: rows[0].source,
+      updatedAt: rows[0].updated_at
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to get activity data' });
+  }
+});
+
 app.get('/api/summary/day', async (req, res) => {
   try {
     await initDb();
@@ -497,21 +582,30 @@ app.get('/api/summary/day', async (req, res) => {
     );
 
     const goalRes = await query(`SELECT * FROM daily_goals WHERE date = $1`, [date]);
+    const activityRes = await query(
+      `SELECT active_calories FROM daily_activity WHERE date = $1::date`,
+      [date]
+    );
     const totals = totalsRes.rows[0];
     const goal = goalRes.rows[0];
     const targetCalories = Number(goal?.target_calories || 2200);
+    const consumedCalories = Number(totals.calories);
+    const activeCalories = Number(activityRes.rows[0]?.active_calories || 0);
+    const netCalories = consumedCalories - activeCalories;
 
     res.json({
       date,
       totals: {
-        calories: Number(totals.calories),
+        calories: consumedCalories,
         protein: Number(totals.protein),
         fat: Number(totals.fat),
         carbs: Number(totals.carbs),
         meals: Number(totals.meals)
       },
       targetCalories,
-      deltaCalories: Number(totals.calories) - targetCalories
+      activeCalories,
+      netCalories,
+      deltaCalories: netCalories - targetCalories
     });
   } catch (e) {
     res.status(500).json({ error: 'Failed to get day summary' });

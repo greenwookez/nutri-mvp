@@ -1,22 +1,20 @@
 # Nutri MVP
 
-> This project was conceived in collaboration with an AI agent team and implemented entirely by AI agents running on model **openai-codex/gpt-5.3-codex**.
-
-A web MVP for nutrition tracking (Node.js + PostgreSQL + web UI).
+A web MVP for nutrition tracking (Node.js + PostgreSQL + web UI), now with a practical Apple HealthKit Active Calories PoC.
 
 ## What's inside
 
 - Views: **Today / Week / Month**
 - Manual meal logging (form + entries list)
-- Daily macro summary: **Calories / Protein / Fat / Carbs**
-- Weekly calorie balance:
-  - `balance = sum(calories_consumed - daily_calorie_target)` over 7 days
-  - zones:
-    - `green`: `X < -200`
-    - `orange`: `-200 <= X <= 200`
-    - `red`: `X > 200`
-- Database: **PostgreSQL** (Supabase)
-- Auto table initialization on server startup
+- Text meal parsing endpoint (`/api/log-text`)
+- Daily summary:
+  - consumed calories/macros
+  - **activeCalories** (from iOS HealthKit sync)
+  - **netCalories = consumedCalories - activeCalories**
+  - **deltaCalories = netCalories - targetCalories**
+- Weekly calorie balance
+- PostgreSQL storage with auto bootstrap
+- iOS SwiftUI PoC scaffold for HealthKit sync
 
 ## Requirements
 
@@ -30,25 +28,15 @@ npm install
 npm start
 ```
 
-Then open:
+Open: `http://localhost:3000`
 
-- `http://localhost:3000`
+## Environment variables
 
-## Structure
+- `DATABASE_URL` (or `POSTGRES_URL` / `POSTGRES_PRISMA_URL` / `SUPABASE_DB_URL`)
+- `NUTRI_SKIP_DB_BOOTSTRAP=true` (recommended in production)
+- `ACTIVITY_API_KEY` (optional; if set, `/api/activity/active-calories` requires `x-api-key` header)
 
-- `server.js` — backend API + static assets
-- `server.js` — backend API + DB bootstrap
-- `vercel.json` — Vercel routing/build config
-- `public/` — frontend (HTML/CSS/JS)
-
-## Cloud deploy (Vercel + Supabase)
-
-This app is configured for Vercel deployment with PostgreSQL (Supabase).
-
-### 1) Create Supabase project
-1. Create a new Supabase project.
-2. Copy the **Connection string** (Postgres URL).
-3. In Supabase SQL editor, run schema bootstrap:
+## DB schema (core)
 
 ```sql
 CREATE TABLE IF NOT EXISTS meal_entries (
@@ -72,59 +60,115 @@ CREATE TABLE IF NOT EXISTS daily_goals (
   target_fat REAL NOT NULL DEFAULT 70,
   target_carbs REAL NOT NULL DEFAULT 240
 );
+
+CREATE TABLE IF NOT EXISTS daily_activity (
+  date DATE PRIMARY KEY,
+  active_calories REAL NOT NULL DEFAULT 0,
+  source TEXT NOT NULL DEFAULT 'manual',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 ```
 
-### 2) Deploy to Vercel
-1. Import `greenwookez/nutri-mvp` into Vercel.
-2. Add env var:
-   - preferred: `DATABASE_URL` = your Supabase Postgres URL
-   - or rely on Vercel integration vars (`POSTGRES_URL` / `POSTGRES_PRISMA_URL`) — supported by this app.
-3. Add env var for production reliability:
-   - `NUTRI_SKIP_DB_BOOTSTRAP=true`
-   (use Supabase SQL editor for schema migrations instead of runtime CREATE TABLE)
-4. Deploy.
+## API
 
-`vercel.json` is included for Node API routing + static frontend.
-
-## API (minimum)
-
+Existing:
 - `GET /api/entries?from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `POST /api/entries`
+- `POST /api/log-text`
 - `GET /api/summary/day?date=YYYY-MM-DD`
 - `GET /api/summary/week?date=YYYY-MM-DD`
 - `GET /api/summary/month?date=YYYY-MM-DD`
-- `POST /api/log-text`
 
-### Example: quick text log
+New (Activity):
+- `POST /api/activity/active-calories`
+- `GET /api/activity/day?date=YYYY-MM-DD`
 
-```bash
-curl -X POST http://localhost:3000/api/log-text \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "text": "2 eggs, 100g chicken breast, 1 tbsp olive oil",
-    "date": "2026-02-27",
-    "time": "13:10",
-    "mealType": "lunch"
-  }'
+### POST /api/activity/active-calories
+
+Request JSON:
+
+```json
+{
+  "date": "2026-03-01",
+  "activeCalories": 540,
+  "source": "ios-healthkit"
+}
 ```
 
-Response includes normalized items, totals (calories/protein/fat/carbs), and confidence.
+Headers:
+- `Content-Type: application/json`
+- `x-api-key: <ACTIVITY_API_KEY>` (only if `ACTIVITY_API_KEY` env is set)
 
-## Design update (v3)
+### GET /api/activity/day
 
-Frontend updated to **Claude-like dark v3** with unified design tokens and refined typography.
+Example response:
 
-Implemented:
-- New app shell, calm sticky header/tabs, unified button system (`+ Добавить еду`)
-- P0 hero KPI card (`consumed / target`, delta, macros, zone badge)
-- Reworked meals feed rows (lighter hierarchy, grouped by meal type)
-- Removed legacy hardcoded colors, switched to single token-based theme in `public/styles.css`
+```json
+{
+  "date": "2026-03-01",
+  "activeCalories": 540,
+  "source": "ios-healthkit",
+  "updatedAt": "2026-03-01T18:54:10.000Z"
+}
+```
 
-Additional (P1 partial):
-- Mobile sticky quick-add bar
-- Weekly zone badge and low-contrast 7-day chart
-- Unified loading/empty/error visual states
+### GET /api/summary/day
 
-## Note
+Example response (updated):
 
-For local run and cloud deploy, set `DATABASE_URL` to a PostgreSQL connection string (Supabase).
+```json
+{
+  "date": "2026-03-01",
+  "totals": {
+    "calories": 1750,
+    "protein": 120,
+    "fat": 60,
+    "carbs": 180,
+    "meals": 3
+  },
+  "targetCalories": 2200,
+  "activeCalories": 540,
+  "netCalories": 1210,
+  "deltaCalories": -990
+}
+```
+
+## iOS HealthKit PoC (SwiftUI scaffold)
+
+Scaffold files are in:
+
+- `ios/NutriMVPHealthPoC/NutriMVPHealthPoCApp.swift`
+- `ios/NutriMVPHealthPoC/ContentView.swift`
+- `ios/NutriMVPHealthPoC/HealthKitManager.swift`
+- `ios/NutriMVPHealthPoC/APIClient.swift`
+- `ios/NutriMVPHealthPoC/Info.plist.snippet.xml`
+
+### Xcode setup steps
+
+1. Create a new iOS App in Xcode (SwiftUI lifecycle).
+2. Bundle identifier: replace with your own (for example `com.example.NutriMVPHealthPoC`).
+3. Add capability: **Signing & Capabilities → + Capability → HealthKit**.
+4. Add required Info.plist usage descriptions from `Info.plist.snippet.xml`:
+   - `NSHealthShareUsageDescription`
+   - Optional for this PoC: `NSHealthUpdateUsageDescription`
+5. Replace default app/view files with scaffold files from `ios/NutriMVPHealthPoC`.
+6. Configure server URL:
+   - In `ContentView.swift`, set `NUTRI_BASE_URL` env in scheme, or hardcode your URL.
+   - For local dev use `http://<your-local-ip>:3000` (not `localhost` from iPhone).
+7. Optional auth:
+   - If backend sets `ACTIVITY_API_KEY`, provide `NUTRI_ACTIVITY_API_KEY` in Xcode scheme env.
+
+### What the PoC app does
+
+- Requests HealthKit read permission for `activeEnergyBurned`
+- Reads today's cumulative active calories (kcal)
+- Sends value to `POST /api/activity/active-calories`
+- Shows sync status in a simple UI
+
+## Deployment note
+
+For Vercel + Supabase, prefer SQL migrations in Supabase and set:
+
+- `NUTRI_SKIP_DB_BOOTSTRAP=true`
+
+Then apply `daily_activity` table SQL manually if not yet present.
