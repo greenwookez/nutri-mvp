@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nutri MVP</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <p class="eyebrow">Nutri MVP</p>
+          <h1>Питание сегодня</h1>
+          <div class="date-nav" aria-label="Быстрый выбор даты">
+            <button type="button" class="day-pill" id="prevDay">Вчера</button>
+            <input type="date" id="date" required />
+            <button type="button" class="day-pill" id="nextDay">Завтра</button>
+            <input type="time" id="time" required />
+          </div>
+        </div>
+      </header>
+
+      <main class="container">
+        <nav class="tabs" aria-label="Views">
+          <button class="tab active" data-view="today">Сегодня</button>
+          <button class="tab" data-view="week">Неделя</button>
+          <button class="tab" data-view="month">Месяц</button>
+          <button type="button" class="btn btn-primary add-meal-btn" id="scrollToAdd">+ Добавить еду</button>
+        </nav>
+
+        <section id="today" class="view active">
+          <article class="card kpi-hero" id="daySummary"></article>
+
+          <div class="today-grid">
+            <article class="card" id="addMealCard">
+              <div class="card-head">
+                <h2>Добавить приём пищи</h2>
+                <p>Быстро и без лишних шагов.</p>
+              </div>
+              <form id="mealForm" class="grid-form">
+                <select id="mealType">
+                  <option value="breakfast">Завтрак</option>
+                  <option value="lunch">Обед</option>
+                  <option value="dinner">Ужин</option>
+                  <option value="snack">Перекус</option>
+                  <option value="other">Другое</option>
+                </select>
+                <input type="text" id="foodName" placeholder="Название" required />
+                <input type="number" id="calories" placeholder="Калории" min="0" required />
+                <input type="number" id="protein" placeholder="Белки (г)" min="0" step="0.1" />
+                <input type="number" id="fat" placeholder="Жиры (г)" min="0" step="0.1" />
+                <input type="number" id="carbs" placeholder="Углеводы (г)" min="0" step="0.1" />
+                <input type="text" id="notes" placeholder="Заметка (опц.)" />
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+              </form>
+            </article>
+
+            <article class="card">
+              <div class="card-head">
+                <h2>Quick Add</h2>
+                <p>Например: 2 яйца, 100г курицы, 1 ст.л. масла.</p>
+              </div>
+              <form id="quickLogForm" class="quick-log-form">
+                <input type="text" id="quickText" placeholder="Введите одним текстом" required />
+                <div class="actions-row">
+                  <button type="submit" class="btn btn-primary">Сохранить</button>
+                  <button type="button" class="btn btn-secondary" id="saveAndMore">Сохранить и ещё</button>
+                </div>
+              </form>
+              <div id="quickLogResult" class="small"></div>
+            </article>
+          </div>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>Сегодняшние записи</h2>
+            </div>
+            <div id="todayEntries"></div>
+          </article>
+        </section>
+
+        <section id="week" class="view">
+          <article class="card">
+            <div class="card-head">
+              <h2>Баланс недели</h2>
+            </div>
+            <div id="weekSummary"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>По дням</h2>
+            </div>
+            <div id="weekDays"></div>
+          </article>
+        </section>
+
+        <section id="month" class="view">
+          <article class="card">
+            <div class="card-head">
+              <h2>Сводка месяца</h2>
+            </div>
+            <div id="monthSummary"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Дни месяца</h2>
+            </div>
+            <div id="monthDays"></div>
+          </article>
+        </section>
+      </main>
+
+      <form id="quickLogStickyForm" class="quick-add-sticky" aria-label="Быстрое добавление">
+        <input type="text" id="quickTextSticky" placeholder="Быстро добавить: 200г творога" required />
+        <button class="btn btn-primary" type="submit">+ Добавить</button>
+      </form>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

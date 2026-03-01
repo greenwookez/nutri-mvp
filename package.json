@@ -1,0 +1,16 @@
+{
+  "name": "nutri-mvp",
+  "version": "1.0.0",
+  "description": "Локальный MVP трекинга питания",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "db:init": "node scripts/init-db.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "pg-mem": "^3.0.5"
+  }
+}
