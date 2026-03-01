@@ -163,12 +163,24 @@ async function initDb() {
 
   await query(`
     CREATE TABLE IF NOT EXISTS daily_activity (
-      date DATE PRIMARY KEY,
+      id BIGSERIAL PRIMARY KEY,
+      date DATE NOT NULL,
       active_calories REAL NOT NULL DEFAULT 0,
       source TEXT NOT NULL DEFAULT 'manual',
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+
+  // Migration path from old schema: one row per date + updated_at
+  await query(`ALTER TABLE daily_activity RENAME COLUMN updated_at TO created_at`).catch(() => {});
+  await query(`ALTER TABLE daily_activity ADD COLUMN IF NOT EXISTS id BIGINT`).catch(() => {});
+  await query(`CREATE SEQUENCE IF NOT EXISTS daily_activity_id_seq`).catch(() => {});
+  await query(`ALTER TABLE daily_activity ALTER COLUMN id SET DEFAULT nextval('daily_activity_id_seq')`).catch(() => {});
+  await query(`UPDATE daily_activity SET id = nextval('daily_activity_id_seq') WHERE id IS NULL`).catch(() => {});
+  await query(`ALTER TABLE daily_activity ALTER COLUMN id SET NOT NULL`).catch(() => {});
+  await query(`ALTER TABLE daily_activity DROP CONSTRAINT IF EXISTS daily_activity_pkey`).catch(() => {});
+  await query(`ALTER TABLE daily_activity ADD CONSTRAINT daily_activity_pkey PRIMARY KEY (id)`).catch(() => {});
+  await query(`ALTER TABLE daily_activity ALTER COLUMN created_at SET DEFAULT NOW()`).catch(() => {});
 
   if (USE_MEMORY_DB) {
     await seedDevData();
@@ -531,39 +543,26 @@ app.post('/api/activity/active-calories', requireActivityApiKey, async (req, res
 
     const activitySource = String(source || 'ios-healthkit').slice(0, 100);
 
-    const upsertRes = await query(
-      `WITH upserted AS (
-         INSERT INTO daily_activity (date, active_calories, source, updated_at)
-         VALUES ($1::date, $2, $3, NOW())
-         ON CONFLICT (date)
-         DO UPDATE SET
-           active_calories = EXCLUDED.active_calories,
-           source = EXCLUDED.source,
-           updated_at = NOW()
-         WHERE daily_activity.active_calories IS DISTINCT FROM EXCLUDED.active_calories
-            OR daily_activity.source IS DISTINCT FROM EXCLUDED.source
-         RETURNING active_calories, source, updated_at
-       )
-       SELECT active_calories, source, updated_at, FALSE AS unchanged
-       FROM upserted
-       UNION ALL
-       SELECT active_calories, source, updated_at, TRUE AS unchanged
-       FROM daily_activity
-       WHERE date = $1::date AND NOT EXISTS (SELECT 1 FROM upserted)
-       LIMIT 1`,
+    const insertRes = await query(
+      `INSERT INTO daily_activity (date, active_calories, source, created_at)
+       VALUES ($1::date, $2, $3, NOW())
+       RETURNING id, active_calories, source, created_at`,
       [entryDate, calories, activitySource]
     );
 
-    const row = upsertRes.rows[0];
+    const row = insertRes.rows[0];
 
     res.status(200).json({
-      message: row.unchanged ? 'Active calories already up to date' : 'Active calories synced',
+      message: 'Active calories synced',
       activity: {
+        id: Number(row.id),
         date: entryDate,
         activeCalories: Number(row.active_calories),
         source: row.source,
-        updatedAt: row.updated_at,
-        unchanged: Boolean(row.unchanged)
+        createdAt: row.created_at,
+        // backward compatibility for older iOS PoC client
+        updatedAt: row.created_at,
+        unchanged: false
       }
     });
   } catch (e) {
@@ -576,21 +575,25 @@ app.get('/api/activity/day', async (req, res) => {
     await initDb();
     const date = req.query.date || new Date().toISOString().slice(0, 10);
     const { rows } = await query(
-      `SELECT active_calories, source, updated_at
+      `SELECT id, active_calories, source, created_at
        FROM daily_activity
-       WHERE date = $1::date`,
+       WHERE date = $1::date
+       ORDER BY created_at DESC, id DESC
+       LIMIT 1`,
       [date]
     );
 
     if (!rows[0]) {
-      return res.json({ date, activeCalories: 0, source: null, updatedAt: null });
+      return res.json({ date, activeCalories: 0, source: null, createdAt: null, updatedAt: null });
     }
 
     return res.json({
+      id: Number(rows[0].id),
       date,
       activeCalories: Number(rows[0].active_calories),
       source: rows[0].source,
-      updatedAt: rows[0].updated_at
+      createdAt: rows[0].created_at,
+      updatedAt: rows[0].created_at
     });
   } catch (e) {
     return res.status(500).json({ error: 'Failed to get activity data' });
@@ -616,7 +619,11 @@ app.get('/api/summary/day', async (req, res) => {
 
     const goalRes = await query(`SELECT * FROM daily_goals WHERE date = $1`, [date]);
     const activityRes = await query(
-      `SELECT active_calories FROM daily_activity WHERE date = $1::date`,
+      `SELECT active_calories
+       FROM daily_activity
+       WHERE date = $1::date
+       ORDER BY created_at DESC, id DESC
+       LIMIT 1`,
       [date]
     );
     const totals = totalsRes.rows[0];

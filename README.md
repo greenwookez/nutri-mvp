@@ -62,10 +62,11 @@ CREATE TABLE IF NOT EXISTS daily_goals (
 );
 
 CREATE TABLE IF NOT EXISTS daily_activity (
-  date DATE PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
+  date DATE NOT NULL,
   active_calories REAL NOT NULL DEFAULT 0,
   source TEXT NOT NULL DEFAULT 'manual',
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
@@ -82,6 +83,8 @@ Existing:
 New (Activity):
 - `POST /api/activity/active-calories`
 - `GET /api/activity/day?date=YYYY-MM-DD`
+
+Note: `daily_activity` stores multiple records per date; API and day summary use the latest record (`MAX(created_at)`).
 
 ### POST /api/activity/active-calories
 
@@ -105,9 +108,11 @@ Example response:
 
 ```json
 {
+  "id": 42,
   "date": "2026-03-01",
   "activeCalories": 540,
   "source": "ios-healthkit",
+  "createdAt": "2026-03-01T18:54:10.000Z",
   "updatedAt": "2026-03-01T18:54:10.000Z"
 }
 ```
