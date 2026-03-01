@@ -127,6 +127,7 @@ async function loadToday() {
                 <div>
                   <div class="entry-kcal">${fmt(e.calories)} kcal</div>
                   <div class="entry-macros">Б ${fmt(e.protein)} · Ж ${fmt(e.fat)} · У ${fmt(e.carbs)}</div>
+                  <button class="delete-entry" data-id="${e.id}" type="button">Delete</button>
                 </div>
               </div>`
           )
@@ -327,6 +328,24 @@ document.getElementById('saveAndMore').addEventListener('click', async () => {
 document.getElementById('quickLogStickyForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   await submitQuickLog(document.getElementById('quickTextSticky').value, false);
+});
+
+document.getElementById('todayEntries').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.delete-entry');
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  if (!id) return;
+
+  if (!confirm('Delete this entry?')) return;
+
+  const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    alert('Failed to delete entry');
+    return;
+  }
+
+  await refreshAll();
 });
 
 dateInput.addEventListener('change', refreshAll);

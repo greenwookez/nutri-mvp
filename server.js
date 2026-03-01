@@ -453,6 +453,25 @@ app.post('/api/entries', async (req, res) => {
   }
 });
 
+app.delete('/api/entries/:id', async (req, res) => {
+  try {
+    await initDb();
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'Invalid entry id' });
+    }
+
+    const result = await query('DELETE FROM meal_entries WHERE id = $1', [id]);
+    if ((result.rowCount || 0) === 0) {
+      return res.status(404).json({ error: 'Entry not found' });
+    }
+
+    res.json({ ok: true, deletedId: id });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to delete entry' });
+  }
+});
+
 app.post('/api/log-text', async (req, res) => {
   try {
     await initDb();
