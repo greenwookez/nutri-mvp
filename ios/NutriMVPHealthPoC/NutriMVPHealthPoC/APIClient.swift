@@ -6,6 +6,7 @@ struct ActivitySyncResponse: Decodable {
         let activeCalories: Double
         let source: String
         let updatedAt: String
+        let unchanged: Bool?
     }
 
     let message: String

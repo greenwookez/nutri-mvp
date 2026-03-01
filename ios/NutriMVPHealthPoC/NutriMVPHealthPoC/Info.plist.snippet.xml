@@ -4,6 +4,13 @@
 <key>NSHealthUpdateUsageDescription</key>
 <string>Nutri MVP does not write Health data in this PoC. This key is optional.</string>
 
+<!-- Recommended for better background wake opportunities -->
+<key>UIBackgroundModes</key>
+<array>
+    <string>fetch</string>
+    <string>processing</string>
+</array>
+
 <!-- Only for local HTTP testing (recommended: use HTTPS in production) -->
 <key>NSAppTransportSecurity</key>
 <dict>

@@ -531,25 +531,39 @@ app.post('/api/activity/active-calories', requireActivityApiKey, async (req, res
 
     const activitySource = String(source || 'ios-healthkit').slice(0, 100);
 
-    const { rows } = await query(
-      `INSERT INTO daily_activity (date, active_calories, source, updated_at)
-       VALUES ($1::date, $2, $3, NOW())
-       ON CONFLICT (date)
-       DO UPDATE SET
-         active_calories = EXCLUDED.active_calories,
-         source = EXCLUDED.source,
-         updated_at = NOW()
-       RETURNING active_calories, source, updated_at`,
+    const upsertRes = await query(
+      `WITH upserted AS (
+         INSERT INTO daily_activity (date, active_calories, source, updated_at)
+         VALUES ($1::date, $2, $3, NOW())
+         ON CONFLICT (date)
+         DO UPDATE SET
+           active_calories = EXCLUDED.active_calories,
+           source = EXCLUDED.source,
+           updated_at = NOW()
+         WHERE daily_activity.active_calories IS DISTINCT FROM EXCLUDED.active_calories
+            OR daily_activity.source IS DISTINCT FROM EXCLUDED.source
+         RETURNING active_calories, source, updated_at
+       )
+       SELECT active_calories, source, updated_at, FALSE AS unchanged
+       FROM upserted
+       UNION ALL
+       SELECT active_calories, source, updated_at, TRUE AS unchanged
+       FROM daily_activity
+       WHERE date = $1::date AND NOT EXISTS (SELECT 1 FROM upserted)
+       LIMIT 1`,
       [entryDate, calories, activitySource]
     );
 
+    const row = upsertRes.rows[0];
+
     res.status(200).json({
-      message: 'Active calories synced',
+      message: row.unchanged ? 'Active calories already up to date' : 'Active calories synced',
       activity: {
         date: entryDate,
-        activeCalories: Number(rows[0].active_calories),
-        source: rows[0].source,
-        updatedAt: rows[0].updated_at
+        activeCalories: Number(row.active_calories),
+        source: row.source,
+        updatedAt: row.updated_at,
+        unchanged: Boolean(row.unchanged)
       }
     });
   } catch (e) {

@@ -148,22 +148,37 @@ Scaffold files are in:
 1. Create a new iOS App in Xcode (SwiftUI lifecycle).
 2. Bundle identifier: replace with your own (for example `com.example.NutriMVPHealthPoC`).
 3. Add capability: **Signing & Capabilities → + Capability → HealthKit**.
-4. Add required Info.plist usage descriptions from `Info.plist.snippet.xml`:
+4. In HealthKit capability, ensure **Background Delivery** is enabled (entitlement in this repo already includes it).
+5. Add capability: **Background Modes** and enable:
+   - `Background fetch`
+   - `Background processing`
+6. Add required Info.plist usage descriptions from `Info.plist.snippet.xml`:
    - `NSHealthShareUsageDescription`
    - Optional for this PoC: `NSHealthUpdateUsageDescription`
-5. Replace default app/view files with scaffold files from `ios/NutriMVPHealthPoC`.
-6. Configure server URL:
+   - Recommended: `UIBackgroundModes` (`fetch`, `processing`)
+7. Replace default app/view files with scaffold files from `ios/NutriMVPHealthPoC`.
+8. Configure server URL:
    - In `ContentView.swift`, set `NUTRI_BASE_URL` env in scheme, or hardcode your URL.
    - For local dev use `http://<your-local-ip>:3000` (not `localhost` from iPhone).
-7. Optional auth:
+9. Optional auth:
    - If backend sets `ACTIVITY_API_KEY`, provide `NUTRI_ACTIVITY_API_KEY` in Xcode scheme env.
 
 ### What the PoC app does
 
 - Requests HealthKit read permission for `activeEnergyBurned`
-- Reads today's cumulative active calories (kcal)
+- On app launch, registers `HKObserverQuery` + enables background delivery (`.immediate`)
+- On observer updates, reads today's cumulative active calories (kcal)
 - Sends value to `POST /api/activity/active-calories`
-- Shows sync status in a simple UI
+- Keeps manual sync button working
+- Persists and shows background sync status (`last background sync time/result`)
+
+### Background sync caveats (important)
+
+- iOS background delivery is **best effort**.
+- It is **not real-time** and **not guaranteed** at exact intervals.
+- Delivery can be delayed by system conditions (battery saver, app usage patterns, connectivity, Low Power Mode, etc.).
+- Force-quit from app switcher can reduce/stop background opportunities until next foreground launch.
+- Treat background sync as eventual consistency; manual sync remains the fallback for immediate update.
 
 ## Deployment note
 
