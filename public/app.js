@@ -81,12 +81,15 @@ async function loadToday() {
 
     const consumed = fmt(summary.totals.calories);
     const target = fmt(summary.targetCalories);
-    const delta = fmt(summary.deltaCalories);
+    const active = fmt(summary.activeCalories || 0);
+    const net = fmt(summary.netCalories ?? consumed - active);
+    const delta = fmt(summary.deltaCalories ?? (net - target));
     const zone = dayZone(delta);
 
     document.getElementById('daySummary').innerHTML = `
       <p class="kpi-title">${date}</p>
-      <div class="kpi-main">${consumed} / ${target} kcal</div>
+      <div class="kpi-main">Net ${net} / ${target} kcal</div>
+      <p class="kpi-delta">Съедено ${consumed} · Активность ${active}</p>
       <p class="kpi-delta">${delta <= 0 ? `Осталось ${Math.abs(delta)} kcal` : `+${delta} kcal сверх цели`}</p>
       <div class="kpi-macros">
         <div class="macro-pill"><span class="macro-name">Белки</span><strong>${fmt(summary.totals.protein)} г</strong></div>
