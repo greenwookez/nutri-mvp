@@ -12,6 +12,7 @@ const DATABASE_URL =
   process.env.POSTGRES_PRISMA_URL ||
   process.env.SUPABASE_DB_URL;
 const USE_MEMORY_DB = !DATABASE_URL;
+const SKIP_DB_BOOTSTRAP = process.env.NUTRI_SKIP_DB_BOOTSTRAP === 'true';
 
 if (USE_MEMORY_DB) {
   console.warn('[nutri-mvp] DATABASE_URL is not set. Using local in-memory PostgreSQL (pg-mem) for dev/testing.');
@@ -110,7 +111,10 @@ async function seedDevData() {
 }
 
 async function initDb() {
-  if (dbInitialized) return;
+  if (dbInitialized || SKIP_DB_BOOTSTRAP) {
+    dbInitialized = true;
+    return;
+  }
 
   await query(`
     CREATE TABLE IF NOT EXISTS meal_entries (

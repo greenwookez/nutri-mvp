@@ -79,7 +79,10 @@ CREATE TABLE IF NOT EXISTS daily_goals (
 2. Add env var:
    - preferred: `DATABASE_URL` = your Supabase Postgres URL
    - or rely on Vercel integration vars (`POSTGRES_URL` / `POSTGRES_PRISMA_URL`) — supported by this app.
-3. Deploy.
+3. Add env var for production reliability:
+   - `NUTRI_SKIP_DB_BOOTSTRAP=true`
+   (use Supabase SQL editor for schema migrations instead of runtime CREATE TABLE)
+4. Deploy.
 
 `vercel.json` is included for Node API routing + static frontend.
 
