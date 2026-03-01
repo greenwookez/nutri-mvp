@@ -74,7 +74,7 @@ final class HealthKitManager {
             healthStore.execute(query)
         }
 
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             healthStore.enableBackgroundDelivery(for: activeEnergyType, frequency: .immediate) { success, error in
                 if let error {
                     continuation.resume(throwing: error)
