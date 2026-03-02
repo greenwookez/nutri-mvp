@@ -147,9 +147,7 @@ if (window.__nutriAppInitialized) {
       const zone = budgetZone(budget);
 
       document.getElementById('daySummary').innerHTML = `
-        <p class="kpi-title">${date}</p>
         <div class="kpi-main">${budget} kcal</div>
-        <p class="kpi-delta">Remaining budget</p>
         <p class="kpi-delta">Consumed ${consumed} · Baseline target ${target} · Activity ${active}</p>
         <div class="kpi-macros">
           <div class="macro-pill"><span class="macro-name">Protein</span><strong>${fmtMacro(summary.totals.protein)} g</strong></div>
