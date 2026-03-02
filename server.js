@@ -600,6 +600,37 @@ app.get('/api/activity/day', async (req, res) => {
   }
 });
 
+app.get('/api/activity/history', requireActivityApiKey, async (req, res) => {
+  try {
+    await initDb();
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const limit = Math.min(Math.max(Number(req.query.limit || 100), 1), 500);
+
+    const { rows } = await query(
+      `SELECT id, date::text AS date, active_calories, source, created_at
+       FROM daily_activity
+       WHERE date = $1::date
+       ORDER BY created_at DESC, id DESC
+       LIMIT $2`,
+      [date, limit]
+    );
+
+    return res.json({
+      date,
+      count: rows.length,
+      items: rows.map((r) => ({
+        id: Number(r.id),
+        date: r.date,
+        activeCalories: Number(r.active_calories),
+        source: r.source,
+        createdAt: r.created_at
+      }))
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to get activity history' });
+  }
+});
+
 app.get('/api/summary/day', async (req, res) => {
   try {
     await initDb();
