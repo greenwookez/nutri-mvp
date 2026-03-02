@@ -517,9 +517,19 @@ button:focus-visible {
 
 @media (max-width: 899px) {
   .topbar-inner {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: stretch;
     gap: 8px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .topbar-title {
+    justify-content: space-between;
+  }
+
+  h1 {
+    font-size: 20px;
   }
 
   .date-nav {
@@ -527,15 +537,53 @@ button:focus-visible {
     justify-content: flex-start;
   }
 
-  #date {
-    flex: 1 1 168px;
-    min-width: 148px;
+  .date-nav input[type="date"] {
+    flex: 1 1 150px;
+    width: auto;
+    min-width: 0;
   }
 
   .time-field {
     margin-left: auto;
   }
 
-  .tabs { top: 112px; }
+  .tabs { top: 120px; }
   .add-meal-btn { display: none; }
+}
+
+@media (max-width: 520px) {
+  .topbar-title {
+    gap: 6px;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+  }
+
+  h1 {
+    font-size: 18px;
+  }
+
+  .date-nav {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 6px;
+  }
+
+  .date-nav .day-pill {
+    padding: 0 8px;
+  }
+
+  .date-nav input[type="date"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .time-field {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-left: 0;
+  }
+
+  .tabs { top: 158px; }
 }
