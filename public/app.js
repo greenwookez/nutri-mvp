@@ -338,6 +338,7 @@ if (window.__nutriAppInitialized) {
     ['foodName', 'calories', 'protein', 'fat', 'carbs', 'notes'].forEach((id) => {
       document.getElementById(id).value = '';
     });
+    document.getElementById('mealType').value = '';
 
     dateInput.value = mealDateInput.value;
     closeAddMealModal();
