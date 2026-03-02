@@ -10,13 +10,18 @@
     <div class="app-shell">
       <header class="topbar">
         <div class="topbar-inner">
-          <p class="eyebrow">Nutri MVP</p>
-          <h1>Nutrition Today</h1>
+          <div class="topbar-title">
+            <p class="eyebrow">Nutri MVP</p>
+            <h1>Nutrition Today</h1>
+          </div>
           <div class="date-nav" aria-label="Quick date picker">
-            <button type="button" class="day-pill" id="prevDay">Yesterday</button>
-            <input type="date" id="date" required />
-            <button type="button" class="day-pill" id="nextDay">Tomorrow</button>
-            <input type="time" id="time" required />
+            <button type="button" class="day-pill" id="prevDay">←</button>
+            <input type="date" id="date" required aria-label="Date" />
+            <button type="button" class="day-pill" id="nextDay">→</button>
+            <label class="time-field" for="time">
+              <span>Time</span>
+              <input type="time" id="time" required />
+            </label>
           </div>
         </div>
       </header>
