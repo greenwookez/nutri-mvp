@@ -55,6 +55,13 @@
 
 * { box-sizing: border-box; }
 
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: var(--bg-page);
@@ -66,7 +73,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.app-shell { min-height: 100vh; }
+.app-shell {
+  min-height: 100vh;
+  width: 100%;
+}
 
 .topbar {
   position: sticky;
@@ -79,7 +89,7 @@ body {
 
 .topbar-inner,
 .container {
-  max-width: 1140px;
+  width: min(100%, 1140px);
   margin: 0 auto;
   padding: 0 16px;
 }
@@ -563,6 +573,12 @@ button:focus-visible {
 }
 
 @media (max-width: 899px) {
+  .topbar-inner,
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
   .topbar-inner {
     flex-direction: column;
     align-items: stretch;
@@ -590,16 +606,34 @@ button:focus-visible {
     min-width: 0;
   }
 
-  .tabs { top: 114px; }
+  .tabs {
+    top: 114px;
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .add-meal-btn {
+    margin-left: 0;
+  }
 }
 
 @media (max-width: 520px) {
+  .topbar-inner,
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
   .topbar-title {
     gap: 6px;
   }
 
   h1 {
     font-size: 18px;
+  }
+
+  .card {
+    padding: 14px;
   }
 
   .date-nav {
@@ -617,10 +651,43 @@ button:focus-visible {
     min-width: 0;
   }
 
-  .tabs { top: 144px; }
+  .tabs {
+    top: 144px;
+    gap: 6px;
+  }
+
+  .tabs .tab {
+    flex: 1 1 calc(33.33% - 4px);
+    text-align: center;
+    min-width: 0;
+  }
+
+  .tabs .add-meal-btn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .entry,
+  .day-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .entry-kcal,
+  .entry-macros {
+    text-align: left;
+  }
+
+  .grid-form {
+    grid-template-columns: 1fr;
+  }
+
+  .field-span-2 {
+    grid-column: 1 / -1;
+  }
 
   .modal-root {
-    width: calc(100vw - 16px);
+    width: calc(100vw - 10px);
   }
 
   .modal-card {
