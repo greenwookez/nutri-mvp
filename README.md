@@ -4,6 +4,8 @@ A web MVP for nutrition tracking (Node.js + PostgreSQL + web UI), now with a pra
 
 ## What's inside
 
+UI direction/handoff notes: `docs/UI_HANDOFF_TONY.md`
+
 - Views: **Today / Week / Month**
 - Manual meal logging (via **+ Add meal** modal dialog + entries list)
 - Text meal parsing endpoint (`/api/log-text`) is still available via API, but **Quick Add UI is removed from web flow**
