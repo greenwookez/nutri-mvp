@@ -5,7 +5,7 @@ A web MVP for nutrition tracking (Node.js + PostgreSQL + web UI), now with a pra
 ## What's inside
 
 - Views: **Today / Week / Month**
-- Manual meal logging (form + entries list)
+- Manual meal logging (via **+ Add meal** modal dialog + entries list)
 - Text meal parsing endpoint (`/api/log-text`) is still available via API, but **Quick Add UI is removed from web flow**
 - Daily summary (web KPI):
   - consumed calories/macros
