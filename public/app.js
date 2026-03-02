@@ -1,6 +1,5 @@
 const dateInput = document.getElementById('date');
 const timeInput = document.getElementById('time');
-const quickLogResult = document.getElementById('quickLogResult');
 
 const todayISO = new Date().toISOString().slice(0, 10);
 dateInput.value = todayISO;
@@ -29,32 +28,43 @@ function shiftDate(deltaDays) {
   refreshAll();
 }
 
-function fmt(n) {
-  return Math.round((Number(n) || 0) * 10) / 10;
+function fmtCalories(value) {
+  return Math.round(Number(value) || 0);
+}
+
+function fmtMacro(value) {
+  return (Math.round((Number(value) || 0) * 10) / 10).toFixed(1);
 }
 
 function mealTypeLabel(type) {
   const labels = {
-    breakfast: 'Завтрак',
-    lunch: 'Обед',
-    dinner: 'Ужин',
-    snack: 'Перекус',
-    other: 'Другое'
+    breakfast: 'Breakfast',
+    lunch: 'Lunch',
+    dinner: 'Dinner',
+    snack: 'Snack',
+    other: 'Other'
   };
   return labels[type] || type;
 }
 
-function dayZone(deltaCalories) {
-  if (deltaCalories < -200) return 'green';
-  if (deltaCalories > 200) return 'red';
-  return 'orange';
+function budgetZone(remainingCalories) {
+  if (remainingCalories < -200) return 'red';
+  if (remainingCalories < 0) return 'orange';
+  return 'green';
 }
 
-function zoneText(zone, delta) {
-  const abs = Math.abs(fmt(delta));
-  if (zone === 'green') return `В пределах плана · запас ${abs} kcal`;
-  if (zone === 'red') return `Небольшой перебор · +${abs} kcal`;
-  return `Около цели · отклонение ${abs} kcal`;
+function budgetZoneText(zone, budget) {
+  const abs = Math.abs(fmtCalories(budget));
+  if (zone === 'green') return `Within budget · ${abs} kcal remaining`;
+  if (zone === 'red') return `Over budget · ${abs} kcal over`;
+  return `Close to budget · ${abs} kcal over`;
+}
+
+function weekZoneText(zone, balance) {
+  const abs = Math.abs(fmtCalories(balance));
+  if (zone === 'green') return `Good weekly balance · ${abs} kcal under target`;
+  if (zone === 'red') return `Weekly overage · ${abs} kcal above target`;
+  return `Near weekly target · ${abs} kcal difference`;
 }
 
 function setState(containerId, text, type = 'info') {
@@ -63,8 +73,8 @@ function setState(containerId, text, type = 'info') {
 
 async function loadToday() {
   const date = dateInput.value;
-  setState('daySummary', 'Загружаем сводку...');
-  setState('todayEntries', 'Загружаем записи...');
+  setState('daySummary', 'Loading summary...');
+  setState('todayEntries', 'Loading entries...');
 
   try {
     const [summaryRes, entriesRes] = await Promise.all([
@@ -79,28 +89,27 @@ async function loadToday() {
     const summary = await summaryRes.json();
     const entries = await entriesRes.json();
 
-    const consumed = fmt(summary.totals.calories);
-    const target = fmt(summary.targetCalories);
-    const active = fmt(summary.activeCalories || 0);
-    const net = fmt(summary.netCalories ?? consumed - active);
-    const delta = fmt(summary.deltaCalories ?? (net - target));
-    const zone = dayZone(delta);
+    const consumed = fmtCalories(summary.totals.calories);
+    const target = fmtCalories(summary.targetCalories || 2200);
+    const active = fmtCalories(summary.activeCalories || 0);
+    const budget = target + active - consumed;
+    const zone = budgetZone(budget);
 
     document.getElementById('daySummary').innerHTML = `
       <p class="kpi-title">${date}</p>
-      <div class="kpi-main">Net ${net} / ${target} kcal</div>
-      <p class="kpi-delta">Съедено ${consumed} · Активность ${active}</p>
-      <p class="kpi-delta">${delta <= 0 ? `Осталось ${Math.abs(delta)} kcal` : `+${delta} kcal сверх цели`}</p>
+      <div class="kpi-main">${budget} kcal</div>
+      <p class="kpi-delta">Remaining budget</p>
+      <p class="kpi-delta">Consumed ${consumed} · Baseline target ${target} · Activity ${active}</p>
       <div class="kpi-macros">
-        <div class="macro-pill"><span class="macro-name">Белки</span><strong>${fmt(summary.totals.protein)} г</strong></div>
-        <div class="macro-pill"><span class="macro-name">Жиры</span><strong>${fmt(summary.totals.fat)} г</strong></div>
-        <div class="macro-pill"><span class="macro-name">Углеводы</span><strong>${fmt(summary.totals.carbs)} г</strong></div>
+        <div class="macro-pill"><span class="macro-name">Protein</span><strong>${fmtMacro(summary.totals.protein)} g</strong></div>
+        <div class="macro-pill"><span class="macro-name">Fat</span><strong>${fmtMacro(summary.totals.fat)} g</strong></div>
+        <div class="macro-pill"><span class="macro-name">Carbs</span><strong>${fmtMacro(summary.totals.carbs)} g</strong></div>
       </div>
-      <span class="zone-badge zone-${zone}"><span class="zone-dot"></span>${zoneText(zone, delta)}</span>
+      <span class="zone-badge zone-${zone}"><span class="zone-dot"></span>${budgetZoneText(zone, budget)}</span>
     `;
 
     if (!entries.length) {
-      document.getElementById('todayEntries').innerHTML = '<div class="feed-empty">Пока пусто. Добавим первый приём?</div>';
+      document.getElementById('todayEntries').innerHTML = '<div class="feed-empty">No entries yet. Add your first meal.</div>';
       return;
     }
 
@@ -111,7 +120,7 @@ async function loadToday() {
       return acc;
     }, {});
 
-    const groupOrder = ['Завтрак', 'Обед', 'Ужин', 'Перекус', 'Другое'];
+    const groupOrder = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Other'];
 
     const entriesHtml = groupOrder
       .filter((group) => grouped[group]?.length)
@@ -125,8 +134,8 @@ async function loadToday() {
                   <div class="entry-meta">${e.time} · ${group}${e.notes ? ` · ${e.notes}` : ''}</div>
                 </div>
                 <div>
-                  <div class="entry-kcal">${fmt(e.calories)} kcal</div>
-                  <div class="entry-macros">Б ${fmt(e.protein)} · Ж ${fmt(e.fat)} · У ${fmt(e.carbs)}</div>
+                  <div class="entry-kcal">${fmtCalories(e.calories)} kcal</div>
+                  <div class="entry-macros">P ${fmtMacro(e.protein)} · F ${fmtMacro(e.fat)} · C ${fmtMacro(e.carbs)}</div>
                   <button class="delete-entry" data-id="${e.id}" type="button">Delete</button>
                 </div>
               </div>`
@@ -139,13 +148,13 @@ async function loadToday() {
 
     document.getElementById('todayEntries').innerHTML = entriesHtml;
   } catch {
-    setState('daySummary', 'Не удалось загрузить сводку. Попробуйте снова.', 'error');
-    setState('todayEntries', 'Ошибка загрузки записей. Нажмите обновить страницу.', 'error');
+    setState('daySummary', 'Could not load summary. Please try again.', 'error');
+    setState('todayEntries', 'Could not load entries. Refresh the page and retry.', 'error');
   }
 }
 
 function renderWeekChart(days) {
-  if (!days.length) return '<div class="feed-empty">Неделя начата — добавьте больше дней, чтобы увидеть тренд.</div>';
+  if (!days.length) return '<div class="feed-empty">Week started. Add more days to see trend.</div>';
 
   const maxCalories = Math.max(...days.map((d) => Number(d.calories) || 0), 1);
 
@@ -160,7 +169,7 @@ function renderWeekChart(days) {
             const targetHeight = Math.max(8, Math.round((target / maxCalories) * 92));
             return `
               <div class="bar-wrap">
-                <span class="bar-value">${fmt(value)}</span>
+                <span class="bar-value">${fmtCalories(value)}</span>
                 <div style="height: 96px; width: 100%; display:flex; align-items:flex-end; position:relative;">
                   <div class="bar" style="height:${height}px"></div>
                   <div class="bar-target" style="position:absolute; bottom:${targetHeight}px;"></div>
@@ -176,8 +185,8 @@ function renderWeekChart(days) {
 }
 
 async function loadWeek() {
-  setState('weekSummary', 'Считаем баланс недели...');
-  setState('weekDays', 'Загружаем дни...');
+  setState('weekSummary', 'Calculating weekly balance...');
+  setState('weekDays', 'Loading days...');
 
   try {
     const res = await fetch(`/api/summary/week?date=${dateInput.value}`);
@@ -185,8 +194,8 @@ async function loadWeek() {
     const data = await res.json();
 
     document.getElementById('weekSummary').innerHTML = `
-      <span class="zone-badge zone-${data.zone}"><span class="zone-dot"></span>${zoneText(data.zone, data.balance)}</span>
-      <div class="small">Период: ${data.startDate} — ${data.endDate}</div>
+      <span class="zone-badge zone-${data.zone}"><span class="zone-dot"></span>${weekZoneText(data.zone, data.balance)}</span>
+      <div class="small">Period: ${data.startDate} — ${data.endDate}</div>
       ${renderWeekChart(data.days || [])}
     `;
 
@@ -197,23 +206,23 @@ async function loadWeek() {
               <div class="day-row">
                 <div>
                   <div class="entry-title">${d.date}</div>
-                  <div class="entry-meta">Цель ${fmt(d.targetCalories)} kcal</div>
+                  <div class="entry-meta">Target ${fmtCalories(d.targetCalories)} kcal</div>
                 </div>
-                <div class="entry-kcal">${fmt(d.calories)} kcal <span class="entry-macros">(${fmt(d.delta)})</span></div>
+                <div class="entry-kcal">${fmtCalories(d.calories)} kcal <span class="entry-macros">(${fmtCalories(d.delta)})</span></div>
               </div>
             `
           )
           .join('')
-      : '<div class="feed-empty">Неделя начата — добавьте больше дней, чтобы увидеть тренд.</div>';
+      : '<div class="feed-empty">Week started. Add more days to see trend.</div>';
   } catch {
-    setState('weekSummary', 'Не удалось загрузить недельную сводку.', 'error');
-    setState('weekDays', 'Не удалось загрузить дни недели.', 'error');
+    setState('weekSummary', 'Could not load weekly summary.', 'error');
+    setState('weekDays', 'Could not load week days.', 'error');
   }
 }
 
 async function loadMonth() {
-  setState('monthSummary', 'Собираем данные месяца...');
-  setState('monthDays', 'Загружаем дни месяца...');
+  setState('monthSummary', 'Building monthly summary...');
+  setState('monthDays', 'Loading month days...');
 
   try {
     const res = await fetch(`/api/summary/month?date=${dateInput.value}`);
@@ -222,10 +231,10 @@ async function loadMonth() {
 
     document.getElementById('monthSummary').innerHTML = `
       <div class="metrics">
-        <div class="metric"><span class="label">Калории</span><span class="value">${fmt(data.totals.calories)}</span></div>
-        <div class="metric"><span class="label">Белки</span><span class="value">${fmt(data.totals.protein)} г</span></div>
-        <div class="metric"><span class="label">Жиры</span><span class="value">${fmt(data.totals.fat)} г</span></div>
-        <div class="metric"><span class="label">Углеводы</span><span class="value">${fmt(data.totals.carbs)} г</span></div>
+        <div class="metric"><span class="label">Calories</span><span class="value">${fmtCalories(data.totals.calories)}</span></div>
+        <div class="metric"><span class="label">Protein</span><span class="value">${fmtMacro(data.totals.protein)} g</span></div>
+        <div class="metric"><span class="label">Fat</span><span class="value">${fmtMacro(data.totals.fat)} g</span></div>
+        <div class="metric"><span class="label">Carbs</span><span class="value">${fmtMacro(data.totals.carbs)} g</span></div>
       </div>
     `;
 
@@ -237,49 +246,15 @@ async function loadMonth() {
                 <div>
                   <div class="entry-title">${d.date}</div>
                 </div>
-                <div class="entry-kcal">${fmt(d.calories)} kcal <span class="entry-macros">Б${fmt(d.protein)} Ж${fmt(d.fat)} У${fmt(d.carbs)}</span></div>
+                <div class="entry-kcal">${fmtCalories(d.calories)} kcal <span class="entry-macros">P${fmtMacro(d.protein)} F${fmtMacro(d.fat)} C${fmtMacro(d.carbs)}</span></div>
               </div>
             `
           )
           .join('')
-      : '<div class="feed-empty">Собираем картину месяца. Вернитесь через пару дней логов.</div>';
+      : '<div class="feed-empty">Not enough data yet. Add logs to build your monthly view.</div>';
   } catch {
-    setState('monthSummary', 'Не удалось загрузить сводку месяца.', 'error');
-    setState('monthDays', 'Не удалось загрузить дни месяца.', 'error');
-  }
-}
-
-async function submitQuickLog(text, keepFocus = false) {
-  const payload = {
-    text: text.trim(),
-    date: dateInput.value,
-    time: timeInput.value,
-    mealType: document.getElementById('mealType').value
-  };
-
-  if (!payload.text) return;
-
-  const res = await fetch('/api/log-text', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    quickLogResult.textContent = 'Не удалось распознать и сохранить запись.';
-    return;
-  }
-
-  const data = await res.json();
-  quickLogResult.innerHTML = `Сохранено <strong>${data.saved_entries}</strong> · ${fmt(data.totals.calories)} kcal, Б${fmt(data.totals.protein)} / Ж${fmt(data.totals.fat)} / У${fmt(data.totals.carbs)} · уверенность <strong>${data.confidence}</strong>`;
-
-  document.getElementById('quickText').value = '';
-  document.getElementById('quickTextSticky').value = '';
-
-  await refreshAll();
-
-  if (keepFocus) {
-    document.getElementById('quickText').focus();
+    setState('monthSummary', 'Could not load monthly summary.', 'error');
+    setState('monthDays', 'Could not load month days.', 'error');
   }
 }
 
@@ -305,7 +280,7 @@ document.getElementById('mealForm').addEventListener('submit', async (e) => {
   });
 
   if (!res.ok) {
-    alert('Не удалось сохранить запись. Попробуйте ещё раз.');
+    alert('Could not save entry. Please try again.');
     return;
   }
 
@@ -314,20 +289,6 @@ document.getElementById('mealForm').addEventListener('submit', async (e) => {
   });
 
   await refreshAll();
-});
-
-document.getElementById('quickLogForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  await submitQuickLog(document.getElementById('quickText').value, false);
-});
-
-document.getElementById('saveAndMore').addEventListener('click', async () => {
-  await submitQuickLog(document.getElementById('quickText').value, true);
-});
-
-document.getElementById('quickLogStickyForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  await submitQuickLog(document.getElementById('quickTextSticky').value, false);
 });
 
 document.getElementById('todayEntries').addEventListener('click', async (e) => {

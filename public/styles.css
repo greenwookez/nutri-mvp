@@ -326,8 +326,6 @@ button:focus-visible {
   gap: 10px;
 }
 
-.quick-log-form input { margin-bottom: 10px; }
-.actions-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .feed-empty,
 .state-box {
@@ -435,22 +433,6 @@ button:focus-visible {
 
 .small { color: var(--text-muted); font-size: 13px; margin-top: 10px; }
 
-.quick-add-sticky {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 40;
-  display: none;
-  gap: 8px;
-  padding: 10px 12px;
-  background: var(--bg-overlay);
-  border-top: 1px solid var(--border-default);
-  backdrop-filter: blur(8px);
-}
-
-.quick-add-sticky input { flex: 1; }
-
 @media (min-width: 900px) {
   .container { padding-top: 32px; }
   .today-grid { grid-template-columns: 1.15fr 0.85fr; }
@@ -460,5 +442,4 @@ button:focus-visible {
 @media (max-width: 899px) {
   .tabs { top: 112px; }
   .add-meal-btn { display: none; }
-  .quick-add-sticky { display: flex; }
 }

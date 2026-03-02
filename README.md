@@ -6,12 +6,12 @@ A web MVP for nutrition tracking (Node.js + PostgreSQL + web UI), now with a pra
 
 - Views: **Today / Week / Month**
 - Manual meal logging (form + entries list)
-- Text meal parsing endpoint (`/api/log-text`)
-- Daily summary:
+- Text meal parsing endpoint (`/api/log-text`) is still available via API, but **Quick Add UI is removed from web flow**
+- Daily summary (web KPI):
   - consumed calories/macros
   - **activeCalories** (from iOS HealthKit sync)
-  - **netCalories = consumedCalories - activeCalories**
-  - **deltaCalories = netCalories - targetCalories**
+  - **dailyRemainingBudget = targetCalories + activeCalories - consumedCalories**
+  - default baseline **targetCalories = 2200**
 - Weekly calorie balance
 - PostgreSQL storage with auto bootstrap
 - iOS SwiftUI PoC scaffold for HealthKit sync
