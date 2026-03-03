@@ -19,6 +19,7 @@ import {
 import { DaySummary, MealEntry } from "@/lib/types";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "./ui/textarea";
+import { Skeleton } from "./ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +75,8 @@ export function TrackerPage() {
   const [summary, setSummary] = useState<DaySummary | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyMeal);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const summaryEndpoint = useMemo(() => {
     if (view === "week") return `/api/summary/week?date=${date}`;
@@ -82,12 +85,26 @@ export function TrackerPage() {
   }, [view, date]);
 
   async function load() {
-    const [entriesRes, summaryRes] = await Promise.all([
-      fetch(`/api/entries?from=${date}&to=${date}`),
-      fetch(summaryEndpoint),
-    ]);
-    setEntries(await entriesRes.json());
-    setSummary(await summaryRes.json());
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [entriesRes, summaryRes] = await Promise.all([
+        fetch(`/api/entries?from=${date}&to=${date}`),
+        fetch(summaryEndpoint),
+      ]);
+
+      if (!entriesRes.ok || !summaryRes.ok) {
+        throw new Error("Failed to load tracker data");
+      }
+
+      setEntries(await entriesRes.json());
+      setSummary(await summaryRes.json());
+    } catch {
+      setError("Could not load data. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -269,30 +286,46 @@ export function TrackerPage() {
             <CardTitle className="text-lg">Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="grid grid-cols-2 gap-2">
-              <Badge variant="secondary" className="justify-center rounded-xl bg-rose-100/70 py-1.5 text-rose-900">
-                {summary?.totals.calories ?? 0} kcal
-              </Badge>
-              <Badge variant="secondary" className="justify-center rounded-xl bg-sky-100/70 py-1.5 text-sky-900">
-                P {summary?.totals.protein ?? 0}g
-              </Badge>
-              <Badge variant="secondary" className="justify-center rounded-xl bg-amber-100/70 py-1.5 text-amber-900">
-                F {summary?.totals.fat ?? 0}g
-              </Badge>
-              <Badge variant="secondary" className="justify-center rounded-xl bg-violet-100/70 py-1.5 text-violet-900">
-                C {summary?.totals.carbs ?? 0}g
-              </Badge>
-            </div>
-            <div className="rounded-2xl bg-emerald-50/80 p-3 text-emerald-900">
-              <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-emerald-700">
-                <Flame className="h-3.5 w-3.5" /> Active calories
-              </p>
-              <p className="text-base font-semibold">{summary?.activeCalories ?? 0} kcal</p>
-            </div>
-            <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-3 py-2 text-white">
-              <span className="text-xs uppercase tracking-wide text-slate-300">Remaining budget</span>
-              <span className="text-base font-semibold">{summary?.deltaCalories ?? 0} kcal</span>
-            </div>
+            {isLoading ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {[...Array(4)].map((_, index) => (
+                    <Skeleton key={index} className="h-8 rounded-xl" />
+                  ))}
+                </div>
+                <Skeleton className="h-16 rounded-2xl" />
+                <Skeleton className="h-10 rounded-2xl" />
+              </div>
+            ) : error ? (
+              <p className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <Badge variant="secondary" className="justify-center rounded-xl bg-rose-100/70 py-1.5 text-rose-900">
+                    {summary?.totals.calories ?? 0} kcal
+                  </Badge>
+                  <Badge variant="secondary" className="justify-center rounded-xl bg-sky-100/70 py-1.5 text-sky-900">
+                    P {summary?.totals.protein ?? 0}g
+                  </Badge>
+                  <Badge variant="secondary" className="justify-center rounded-xl bg-amber-100/70 py-1.5 text-amber-900">
+                    F {summary?.totals.fat ?? 0}g
+                  </Badge>
+                  <Badge variant="secondary" className="justify-center rounded-xl bg-violet-100/70 py-1.5 text-violet-900">
+                    C {summary?.totals.carbs ?? 0}g
+                  </Badge>
+                </div>
+                <div className="rounded-2xl bg-emerald-50/80 p-3 text-emerald-900">
+                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-emerald-700">
+                    <Flame className="h-3.5 w-3.5" /> Active calories
+                  </p>
+                  <p className="text-base font-semibold">{summary?.activeCalories ?? 0} kcal</p>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-3 py-2 text-white">
+                  <span className="text-xs uppercase tracking-wide text-slate-300">Remaining budget</span>
+                  <span className="text-base font-semibold">{summary?.deltaCalories ?? 0} kcal</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -301,54 +334,65 @@ export function TrackerPage() {
             <CardTitle className="text-lg">Meals ({entries.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {entries.length === 0 && (
-              <p className="rounded-2xl bg-slate-50 p-4 text-sm text-muted-foreground">No meals logged</p>
-            )}
-            {entries.map((entry) => (
-              <div
-                key={entry.id}
-                className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-r from-white to-emerald-50/40 p-3 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-slate-900">{entry.foodName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {entry.date} {entry.time} · {entry.mealType}
-                  </p>
-                  <p className="mt-1 text-slate-700">
-                    {entry.calories} kcal · P{entry.protein} F{entry.fat} C{entry.carbs}
-                  </p>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 shrink-0 rounded-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete meal</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete meal entry?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently remove {entry.foodName} from your diary.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        onClick={() => removeMeal(entry.id)}
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+            {isLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, index) => (
+                  <Skeleton key={index} className="h-20 rounded-2xl" />
+                ))}
               </div>
-            ))}
+            ) : error ? (
+              <p className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>
+            ) : entries.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-muted-foreground">
+                No meals logged
+              </div>
+            ) : (
+              entries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-r from-white to-emerald-50/40 p-3 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-900">{entry.foodName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.date} {entry.time} · {entry.mealType}
+                    </p>
+                    <p className="mt-1 text-slate-700">
+                      {entry.calories} kcal · P{entry.protein} F{entry.fat} C{entry.carbs}
+                    </p>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 rounded-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete meal</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete meal entry?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently remove {entry.foodName} from your diary.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => removeMeal(entry.id)}
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
