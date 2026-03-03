@@ -26,7 +26,7 @@ Full-stack MVP rebuilt on **Next.js App Router + TypeScript**.
 - Next.js 15 (App Router)
 - TypeScript (strict)
 - Tailwind CSS
-- shadcn/ui style components (`components/ui/*` + Radix Dialog)
+- shadcn/ui (official CLI setup via `components.json` + `components/ui/*`)
 - Supabase Postgres
 
 ## Environment variables
@@ -54,6 +54,15 @@ npm run dev
 ```
 
 Open: `http://localhost:3000`
+
+## shadcn/ui setup notes
+
+This project is initialized for shadcn/ui (`components.json` already configured).
+
+- Add new components with CLI, for example:
+  - `npx shadcn@latest add button input select dialog tabs card badge textarea`
+- Shared theme tokens are in `app/globals.css` and `tailwind.config.ts`.
+- Reusable UI primitives live in `components/ui/*` and should be preferred over custom lookalikes.
 
 ## Database migration / bootstrap
 
