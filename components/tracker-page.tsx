@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DaySummary, MealEntry } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "./ui/textarea";
 
 const today = format(new Date(), "yyyy-MM-dd");
@@ -115,7 +115,7 @@ export function TrackerPage() {
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="hidden rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700 md:inline-flex">
+              <Button className="rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700">
                 <Plus className="mr-1.5 h-4 w-4" /> Add meal
               </Button>
             </DialogTrigger>
@@ -226,14 +226,29 @@ export function TrackerPage() {
           </Dialog>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 rounded-2xl bg-emerald-50 p-2">
-          <CalendarDays className="h-4 w-4 text-emerald-700" />
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="h-9 rounded-xl border-emerald-200 bg-white"
-          />
+        <div className="mt-3 grid gap-2 sm:grid-cols-[auto_1fr] sm:items-center">
+          <Tabs value={view} onValueChange={(value) => setView(value as ViewMode)}>
+            <TabsList className="h-10 w-full justify-start rounded-2xl bg-emerald-50 p-1 sm:w-auto">
+              {viewItems.map((item) => (
+                <TabsTrigger
+                  key={item.value}
+                  value={item.value}
+                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-emerald-900"
+                >
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-2">
+            <CalendarDays className="h-4 w-4 text-emerald-700" />
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="h-9 rounded-xl border-emerald-200 bg-white"
+            />
+          </div>
         </div>
       </div>
 
@@ -307,47 +322,6 @@ export function TrackerPage() {
         </Card>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-emerald-100 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-3xl bg-emerald-50/80 px-2 py-2">
-          <div className="flex items-center justify-around gap-1">
-            {viewItems.slice(0, 2).map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setView(item.value)}
-                className={cn(
-                  "rounded-2xl px-3 py-2 text-xs font-medium transition",
-                  view === item.value ? "bg-white text-emerald-800 shadow-sm" : "text-slate-500",
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <Button
-            size="icon"
-            onClick={() => setOpen(true)}
-            className="h-12 w-12 rounded-full bg-emerald-600 shadow-md hover:bg-emerald-700"
-          >
-            <Plus className="h-5 w-5" />
-            <span className="sr-only">Add meal</span>
-          </Button>
-
-          <div className="flex justify-end pr-1">
-            <button
-              type="button"
-              onClick={() => setView("month")}
-              className={cn(
-                "rounded-2xl px-3 py-2 text-xs font-medium transition",
-                view === "month" ? "bg-white text-emerald-800 shadow-sm" : "text-slate-500",
-              )}
-            >
-              Month
-            </button>
-          </div>
-        </div>
-      </div>
     </main>
   );
 }
