@@ -4,33 +4,50 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: 154 40% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 142 72% 29%;
-    --primary-foreground: 355 100% 97%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 150 63% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 35% 94%;
+    --secondary-foreground: 160 84% 12%;
+    --muted: 150 29% 95%;
+    --muted-foreground: 215 16% 40%;
+    --accent: 150 35% 92%;
+    --accent-foreground: 160 84% 12%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 142 72% 29%;
-    --radius: 0.5rem;
+    --border: 152 27% 86%;
+    --input: 152 27% 86%;
+    --ring: 150 63% 38%;
+    --radius: 0.9rem;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   * {
     @apply border-border;
   }
 
+  html,
   body {
-    @apply bg-background text-foreground;
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans), sans-serif;
+    background-image: radial-gradient(circle at 10% 5%, rgba(16, 185, 129, 0.1), transparent 35%),
+      radial-gradient(circle at 90% 10%, rgba(56, 189, 248, 0.08), transparent 30%);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display), serif;
   }
 }
