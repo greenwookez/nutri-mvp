@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -135,6 +136,108 @@ export function TrackerPage() {
     load();
   }
 
+  const mealFormFields = (
+    <div className="grid gap-4">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-1.5">
+          <Label htmlFor="meal-date">Date</Label>
+          <Input
+            id="meal-date"
+            type="date"
+            value={form.date}
+            onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="meal-time">Time</Label>
+          <Input
+            id="meal-time"
+            type="time"
+            value={form.time}
+            onChange={(e) => setForm((prev) => ({ ...prev, time: e.target.value }))}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="meal-type">Meal type</Label>
+          <Select
+            value={form.mealType}
+            onValueChange={(value) => setForm((prev) => ({ ...prev, mealType: value }))}
+          >
+            <SelectTrigger id="meal-type">
+              <SelectValue placeholder="Select meal type" />
+            </SelectTrigger>
+            <SelectContent>
+              {mealTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="food-name">Food</Label>
+          <Input
+            id="food-name"
+            type="text"
+            value={form.foodName}
+            onChange={(e) => setForm((prev) => ({ ...prev, foodName: e.target.value }))}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="calories">Calories</Label>
+          <Input
+            id="calories"
+            type="number"
+            value={form.calories}
+            onChange={(e) => setForm((prev) => ({ ...prev, calories: e.target.value }))}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="protein">Protein</Label>
+          <Input
+            id="protein"
+            type="number"
+            value={form.protein}
+            onChange={(e) => setForm((prev) => ({ ...prev, protein: e.target.value }))}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="fat">Fat</Label>
+          <Input
+            id="fat"
+            type="number"
+            value={form.fat}
+            onChange={(e) => setForm((prev) => ({ ...prev, fat: e.target.value }))}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="carbs">Carbs</Label>
+          <Input
+            id="carbs"
+            type="number"
+            value={form.carbs}
+            onChange={(e) => setForm((prev) => ({ ...prev, carbs: e.target.value }))}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-1.5">
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea
+          id="notes"
+          value={form.notes}
+          onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+          rows={3}
+        />
+      </div>
+
+      <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700" onClick={addMeal}>
+        Save meal
+      </Button>
+    </div>
+  );
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-4xl bg-gradient-to-b from-emerald-50/70 via-background to-background px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] md:space-y-6 md:px-8 md:pb-10">
       <div className="sticky top-[env(safe-area-inset-top)] z-20 -mx-4 mb-4 border-b border-emerald-100/70 bg-background/90 px-4 pb-3 pt-1 backdrop-blur md:static md:m-0 md:border-none md:bg-transparent md:p-0 md:backdrop-blur-0">
@@ -143,117 +246,35 @@ export function TrackerPage() {
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-700/70">Nutri tracker</p>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Food diary</h1>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700">
-                <Plus className="mr-1.5 h-4 w-4" /> Add meal
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl border-emerald-100 sm:max-w-[560px]">
-              <DialogHeader>
-                <DialogTitle className="text-xl">Add meal</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="meal-date">Date</Label>
-                    <Input
-                      id="meal-date"
-                      type="date"
-                      value={form.date}
-                      onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="meal-time">Time</Label>
-                    <Input
-                      id="meal-time"
-                      type="time"
-                      value={form.time}
-                      onChange={(e) => setForm((prev) => ({ ...prev, time: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="meal-type">Meal type</Label>
-                    <Select
-                      value={form.mealType}
-                      onValueChange={(value) => setForm((prev) => ({ ...prev, mealType: value }))}
-                    >
-                      <SelectTrigger id="meal-type">
-                        <SelectValue placeholder="Select meal type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mealTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="food-name">Food</Label>
-                    <Input
-                      id="food-name"
-                      type="text"
-                      value={form.foodName}
-                      onChange={(e) => setForm((prev) => ({ ...prev, foodName: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="calories">Calories</Label>
-                    <Input
-                      id="calories"
-                      type="number"
-                      value={form.calories}
-                      onChange={(e) => setForm((prev) => ({ ...prev, calories: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="protein">Protein</Label>
-                    <Input
-                      id="protein"
-                      type="number"
-                      value={form.protein}
-                      onChange={(e) => setForm((prev) => ({ ...prev, protein: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="fat">Fat</Label>
-                    <Input
-                      id="fat"
-                      type="number"
-                      value={form.fat}
-                      onChange={(e) => setForm((prev) => ({ ...prev, fat: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="carbs">Carbs</Label>
-                    <Input
-                      id="carbs"
-                      type="number"
-                      value={form.carbs}
-                      onChange={(e) => setForm((prev) => ({ ...prev, carbs: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={form.notes}
-                    onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
-
-                <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700" onClick={addMeal}>
-                  Save meal
+          <>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="hidden rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700 md:inline-flex">
+                  <Plus className="mr-1.5 h-4 w-4" /> Add meal
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl border-emerald-100 sm:max-w-[560px]">
+                <DialogHeader>
+                  <DialogTitle className="text-xl">Add meal</DialogTitle>
+                </DialogHeader>
+                {mealFormFields}
+              </DialogContent>
+            </Dialog>
+
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button className="rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700 md:hidden">
+                  <Plus className="mr-1.5 h-4 w-4" /> Add meal
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[90dvh] overflow-y-auto rounded-t-3xl border-emerald-100 px-4 pb-6 pt-5">
+                <SheetHeader className="mb-4">
+                  <SheetTitle className="text-left text-xl">Add meal</SheetTitle>
+                </SheetHeader>
+                {mealFormFields}
+              </SheetContent>
+            </Sheet>
+          </>
         </div>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-[auto_1fr] sm:items-center">

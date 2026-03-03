@@ -14,9 +14,9 @@ Ordered execution list (current working backlog).
 ### P1
 - [x] Date picker UX upgrade (`Popover + Calendar`)
 - [x] List visual semantics (`Badge` for meal type in rows, optional separators/menu)
-- [ ] Mobile-first action ergonomics (`Sheet` on small screens)
+- [x] Mobile-first action ergonomics (`Sheet` on small screens)
 - [ ] Accessibility hardening (`DialogDescription`, aria labels, keyboard focus checks)
 - [ ] Toast feedback loop for add/delete success/error
 
 ## Next unfinished task (in order)
-1. **Mobile-first action ergonomics** (`Sheet` for add-meal flow on small screens, keep `Dialog` for desktop).
+1. **Accessibility hardening** (`DialogDescription`, aria labels, keyboard focus checks).
