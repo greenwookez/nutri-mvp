@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarDays, Flame, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronDown, Flame, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,8 @@ import { DaySummary, MealEntry } from "@/lib/types";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "./ui/textarea";
 import { Skeleton } from "./ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar } from "./ui/calendar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -270,12 +272,27 @@ export function TrackerPage() {
           </Tabs>
           <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-2">
             <CalendarDays className="h-4 w-4 text-emerald-700" />
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="h-9 rounded-xl border-emerald-200 bg-white"
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-9 min-w-[180px] justify-between rounded-xl border-emerald-200 bg-white text-left font-normal"
+                >
+                  {format(new Date(`${date}T00:00:00`), "PPP")}
+                  <ChevronDown className="h-4 w-4 opacity-60" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto rounded-2xl border-emerald-100 p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={new Date(`${date}T00:00:00`)}
+                  onSelect={(nextDate) => {
+                    if (nextDate) setDate(format(nextDate, "yyyy-MM-dd"));
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
@@ -354,9 +371,14 @@ export function TrackerPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium text-slate-900">{entry.foodName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {entry.date} {entry.time} · {entry.mealType}
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>
+                        {entry.date} {entry.time}
+                      </span>
+                      <Badge variant="secondary" className="rounded-full bg-emerald-100/80 px-2 py-0 text-[10px] font-medium uppercase tracking-wide text-emerald-900">
+                        {entry.mealType}
+                      </Badge>
+                    </div>
                     <p className="mt-1 text-slate-700">
                       {entry.calories} kcal · P{entry.protein} F{entry.fat} C{entry.carbs}
                     </p>
