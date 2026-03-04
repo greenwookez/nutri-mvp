@@ -307,25 +307,6 @@ export function TrackerPage() {
               </DialogContent>
             </Dialog>
 
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button className="hidden rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700 md:hidden">
-                  <Plus className="mr-1.5 h-4 w-4" /> Add meal
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="bottom"
-                className="h-[90dvh] overflow-y-auto rounded-t-3xl border-emerald-100 px-4 pb-6 pt-5"
-              >
-                <SheetHeader className="mb-4">
-                  <SheetTitle className="text-left text-xl">Add meal</SheetTitle>
-                  <SheetDescription className="text-left">
-                    Fill in the meal details and save to add this entry to your diary.
-                  </SheetDescription>
-                </SheetHeader>
-                {mealFormFields}
-              </SheetContent>
-            </Sheet>
           </>
         </div>
 
