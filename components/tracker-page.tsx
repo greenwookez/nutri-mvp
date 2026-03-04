@@ -6,8 +6,22 @@ import { CalendarDays, ChevronDown, Flame, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,6 +48,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
+import { toast } from "sonner";
 
 const today = format(new Date(), "yyyy-MM-dd");
 
@@ -115,30 +130,58 @@ export function TrackerPage() {
   }, [date, summaryEndpoint]);
 
   async function addMeal() {
-    await fetch("/api/entries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        calories: Number(form.calories),
-        protein: Number(form.protein),
-        fat: Number(form.fat),
-        carbs: Number(form.carbs),
-      }),
-    });
-    setOpen(false);
-    setForm({ ...emptyMeal, date });
-    load();
+    try {
+      const response = await fetch("/api/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          calories: Number(form.calories),
+          protein: Number(form.protein),
+          fat: Number(form.fat),
+          carbs: Number(form.carbs),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add meal");
+      }
+
+      setOpen(false);
+      setForm({ ...emptyMeal, date });
+      toast.success("Meal added", {
+        description: `${form.foodName || "Entry"} saved to your diary.`,
+      });
+      await load();
+    } catch {
+      toast.error("Could not add meal", {
+        description: "Please try again.",
+      });
+    }
   }
 
-  async function removeMeal(id: number) {
-    await fetch(`/api/entries/${id}`, { method: "DELETE" });
-    load();
+  async function removeMeal(id: number, foodName: string) {
+    try {
+      const response = await fetch(`/api/entries/${id}`, { method: "DELETE" });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete meal");
+      }
+
+      toast.success("Meal deleted", {
+        description: `${foodName} was removed from your diary.`,
+      });
+      await load();
+    } catch {
+      toast.error("Could not delete meal", {
+        description: "Please try again.",
+      });
+    }
   }
 
   const mealFormFields = (
     <div className="grid gap-4">
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2.5 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="meal-date">Date</Label>
           <Input
@@ -232,30 +275,33 @@ export function TrackerPage() {
         />
       </div>
 
-      <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700" onClick={addMeal}>
+      <Button className="rounded-xl bg-emerald-600 text-[15px] font-semibold hover:bg-emerald-700" onClick={addMeal}>
         Save meal
       </Button>
     </div>
   );
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-4xl bg-gradient-to-b from-emerald-50/70 via-background to-background px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] md:space-y-6 md:px-8 md:pb-10">
-      <div className="sticky top-[env(safe-area-inset-top)] z-20 -mx-4 mb-4 border-b border-emerald-100/70 bg-background/90 px-4 pb-3 pt-1 backdrop-blur md:static md:m-0 md:border-none md:bg-transparent md:p-0 md:backdrop-blur-0">
+    <main className="mx-auto min-h-screen w-full max-w-4xl bg-gradient-to-b from-emerald-50/65 via-background to-background px-4 pb-[calc(8.25rem+env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] md:space-y-6 md:px-8 md:pb-10">
+      <div className="sticky top-0 z-20 -mx-4 mb-3 border-b border-emerald-100/80 bg-background/92 px-4 pb-3 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:static md:m-0 md:border-none md:bg-transparent md:p-0 md:backdrop-blur-0">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-700/70">Nutri tracker</p>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Food diary</h1>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700/70">Nutri tracker</p>
+            <h1 className="text-[30px] font-semibold leading-[1.06] tracking-tight text-slate-900 md:text-4xl">Food diary</h1>
           </div>
           <>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button className="hidden rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700 md:inline-flex">
+                <Button className="hidden rounded-2xl bg-emerald-600 px-4 text-sm font-semibold shadow-sm hover:bg-emerald-700 md:inline-flex">
                   <Plus className="mr-1.5 h-4 w-4" /> Add meal
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl border-emerald-100 sm:max-w-[560px]">
                 <DialogHeader>
                   <DialogTitle className="text-xl">Add meal</DialogTitle>
+                  <DialogDescription>
+                    Fill in the meal details and save to add this entry to your diary.
+                  </DialogDescription>
                 </DialogHeader>
                 {mealFormFields}
               </DialogContent>
@@ -263,13 +309,19 @@ export function TrackerPage() {
 
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button className="rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700 md:hidden">
+                <Button className="hidden rounded-2xl bg-emerald-600 px-4 shadow-sm hover:bg-emerald-700 md:hidden">
                   <Plus className="mr-1.5 h-4 w-4" /> Add meal
                 </Button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[90dvh] overflow-y-auto rounded-t-3xl border-emerald-100 px-4 pb-6 pt-5">
+              <SheetContent
+                side="bottom"
+                className="h-[90dvh] overflow-y-auto rounded-t-3xl border-emerald-100 px-4 pb-6 pt-5"
+              >
                 <SheetHeader className="mb-4">
                   <SheetTitle className="text-left text-xl">Add meal</SheetTitle>
+                  <SheetDescription className="text-left">
+                    Fill in the meal details and save to add this entry to your diary.
+                  </SheetDescription>
                 </SheetHeader>
                 {mealFormFields}
               </SheetContent>
@@ -278,13 +330,18 @@ export function TrackerPage() {
         </div>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-[auto_1fr] sm:items-center">
-          <Tabs value={view} onValueChange={(value) => setView(value as ViewMode)}>
+          <Tabs
+            value={view}
+            onValueChange={(value) => setView(value as ViewMode)}
+            aria-label="Select summary range"
+            className="hidden sm:block"
+          >
             <TabsList className="h-10 w-full justify-start rounded-2xl bg-emerald-50 p-1 sm:w-auto">
               {viewItems.map((item) => (
                 <TabsTrigger
                   key={item.value}
                   value={item.value}
-                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-emerald-900"
+                  className="rounded-xl text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-emerald-900"
                 >
                   {item.label}
                 </TabsTrigger>
@@ -297,7 +354,8 @@ export function TrackerPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-9 min-w-[180px] justify-between rounded-xl border-emerald-200 bg-white text-left font-normal"
+                  aria-label="Choose date"
+                  className="h-9 min-w-0 flex-1 justify-between rounded-xl border-emerald-200 bg-white px-3 text-left text-sm font-medium text-slate-800 sm:min-w-[180px] sm:flex-none"
                 >
                   {format(new Date(`${date}T00:00:00`), "PPP")}
                   <ChevronDown className="h-4 w-4 opacity-60" />
@@ -318,12 +376,12 @@ export function TrackerPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card className="rounded-3xl border-emerald-100 bg-white/90 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Summary</CardTitle>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+        <Card className="rounded-[1.25rem] border-emerald-100 bg-white/95 shadow-sm md:rounded-3xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold md:text-lg">Summary</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="space-y-3 pt-0 text-sm">
             {isLoading ? (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
@@ -339,39 +397,51 @@ export function TrackerPage() {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-2">
-                  <Badge variant="secondary" className="justify-center rounded-xl bg-rose-100/70 py-1.5 text-rose-900">
+                  <Badge
+                    variant="secondary"
+                    className="justify-center rounded-xl bg-rose-100/70 py-1.5 text-[13px] font-medium text-rose-900"
+                  >
                     {summary?.totals.calories ?? 0} kcal
                   </Badge>
-                  <Badge variant="secondary" className="justify-center rounded-xl bg-sky-100/70 py-1.5 text-sky-900">
+                  <Badge
+                    variant="secondary"
+                    className="justify-center rounded-xl bg-sky-100/70 py-1.5 text-[13px] font-medium text-sky-900"
+                  >
                     P {summary?.totals.protein ?? 0}g
                   </Badge>
-                  <Badge variant="secondary" className="justify-center rounded-xl bg-amber-100/70 py-1.5 text-amber-900">
+                  <Badge
+                    variant="secondary"
+                    className="justify-center rounded-xl bg-amber-100/70 py-1.5 text-[13px] font-medium text-amber-900"
+                  >
                     F {summary?.totals.fat ?? 0}g
                   </Badge>
-                  <Badge variant="secondary" className="justify-center rounded-xl bg-violet-100/70 py-1.5 text-violet-900">
+                  <Badge
+                    variant="secondary"
+                    className="justify-center rounded-xl bg-violet-100/70 py-1.5 text-[13px] font-medium text-violet-900"
+                  >
                     C {summary?.totals.carbs ?? 0}g
                   </Badge>
                 </div>
                 <div className="rounded-2xl bg-emerald-50/80 p-3 text-emerald-900">
-                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-emerald-700">
+                  <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
                     <Flame className="h-3.5 w-3.5" /> Active calories
                   </p>
-                  <p className="text-base font-semibold">{summary?.activeCalories ?? 0} kcal</p>
+                  <p className="mt-0.5 text-lg font-semibold leading-tight">{summary?.activeCalories ?? 0} kcal</p>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-3 py-2 text-white">
-                  <span className="text-xs uppercase tracking-wide text-slate-300">Remaining budget</span>
-                  <span className="text-base font-semibold">{summary?.deltaCalories ?? 0} kcal</span>
+                <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-3 py-2.5 text-white">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-300">Remaining budget</span>
+                  <span className="text-lg font-semibold leading-tight">{summary?.deltaCalories ?? 0} kcal</span>
                 </div>
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-emerald-100 bg-white/90 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Meals ({entries.length})</CardTitle>
+        <Card className="rounded-[1.25rem] border-emerald-100 bg-white/95 shadow-sm md:rounded-3xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold md:text-lg">Meals ({entries.length})</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 pt-0">
             {isLoading ? (
               <div className="space-y-2">
                 {[...Array(3)].map((_, index) => (
@@ -391,16 +461,19 @@ export function TrackerPage() {
                   className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-r from-white to-emerald-50/40 p-3 text-sm"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-slate-900">{entry.foodName}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <p className="truncate text-[15px] font-medium text-slate-900">{entry.foodName}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
                       <span>
                         {entry.date} {entry.time}
                       </span>
-                      <Badge variant="secondary" className="rounded-full bg-emerald-100/80 px-2 py-0 text-[10px] font-medium uppercase tracking-wide text-emerald-900">
+                      <Badge
+                        variant="secondary"
+                        className="rounded-full bg-emerald-100/80 px-2 py-0 text-[10px] font-semibold uppercase tracking-wide text-emerald-900"
+                      >
                         {entry.mealType}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-slate-700">
+                    <p className="mt-1 text-[13px] text-slate-700">
                       {entry.calories} kcal · P{entry.protein} F{entry.fat} C{entry.carbs}
                     </p>
                   </div>
@@ -409,6 +482,7 @@ export function TrackerPage() {
                       <Button
                         variant="outline"
                         size="icon"
+                        aria-label={`Delete ${entry.foodName}`}
                         className="h-8 w-8 shrink-0 rounded-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -426,7 +500,7 @@ export function TrackerPage() {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          onClick={() => removeMeal(entry.id)}
+                          onClick={() => removeMeal(entry.id, entry.foodName)}
                         >
                           Delete
                         </AlertDialogAction>
@@ -440,6 +514,51 @@ export function TrackerPage() {
         </Card>
       </div>
 
+      <div className="fixed inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 sm:hidden">
+        <div className="flex items-center gap-1.5 rounded-2xl border border-emerald-100/80 bg-white/95 p-1.5 shadow-lg shadow-emerald-100/70 backdrop-blur">
+          {viewItems.map((item) => {
+            const active = view === item.value;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setView(item.value)}
+                className={`h-10 min-w-0 flex-1 rounded-xl px-2 text-[13px] font-semibold transition-all ${
+                  active
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-emerald-900/70 hover:bg-emerald-50 active:scale-[0.98]"
+                }`}
+                aria-pressed={active}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm transition active:scale-[0.97]"
+                aria-label="Add meal"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </SheetTrigger>
+            <SheetContent
+              side="bottom"
+              className="h-[90dvh] overflow-y-auto rounded-t-3xl border-emerald-100 px-4 pb-6 pt-5"
+            >
+              <SheetHeader className="mb-4">
+                <SheetTitle className="text-left text-xl">Add meal</SheetTitle>
+                <SheetDescription className="text-left">
+                  Fill in the meal details and save to add this entry to your diary.
+                </SheetDescription>
+              </SheetHeader>
+              {mealFormFields}
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
     </main>
   );
 }
