@@ -9,6 +9,8 @@ export type MealEntry = {
   fat: number;
   carbs: number;
   notes: string;
+  favoriteId?: number | null;
+  grams?: number | null;
   createdAt: string;
 };
 
@@ -25,4 +27,25 @@ export type DaySummary = {
   activeCalories: number;
   netCalories: number;
   deltaCalories: number;
+};
+
+export type FavoritePortion = {
+  id?: number;
+  label: string;
+  grams: number;
+  sortOrder?: number;
+};
+
+export type FavoriteItem = {
+  id: number;
+  label: string;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  fatPer100g: number;
+  carbsPer100g: number;
+  defaultGrams: number;
+  notes: string;
+  portions: FavoritePortion[];
+  createdAt: string;
+  updatedAt: string;
 };

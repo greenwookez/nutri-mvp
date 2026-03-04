@@ -14,7 +14,10 @@ Full-stack MVP rebuilt on **Next.js App Router + TypeScript**.
 ## Features
 
 - Today / Week / Month summary views
-- Add meal via modal dialog
+- Add meal via modal dialog (free mode: label + macros)
+- Favorites library (create/edit/delete/search)
+- Add meal from favorite with grams-based macro calculation
+- Optional favorite portions (e.g. `egg:50g`, `slice:30g`)
 - Delete meal entry
 - Daily remaining budget calculation:
   - `remaining = targetCalories + activeCalories - consumedCalories`
@@ -70,16 +73,28 @@ Run SQL from `db/bootstrap.sql` in Supabase SQL editor (or your Postgres migrati
 
 Core tables:
 
-- `meal_entries`
+- `meal_entries` (now includes optional `favorite_id`, `grams`)
 - `daily_goals`
 - `daily_activity`
+- `favorites`
+- `favorite_portions`
 
 ## API endpoints
 
 ### Meals
 - `GET /api/entries?from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `POST /api/entries`
+  - Free mode payload: `{ date,time,mealType,foodName,calories,protein,fat,carbs,notes }`
+  - Favorite mode payload: `{ date,time,mealType,favoriteId,grams,notes }` (macros auto-computed from favorite per100)
 - `DELETE /api/entries/:id`
+
+### Favorites
+- `GET /api/favorites?q=<optional>&limit=<optional>`
+- `POST /api/favorites`
+- `GET /api/favorites/:id`
+- `PUT /api/favorites/:id`
+- `DELETE /api/favorites/:id`
+- `GET /api/favorites/search?q=<optional>&limit=<optional>` (Calzonchik retrieval-friendly)
 
 ### Summary
 - `GET /api/summary/day?date=YYYY-MM-DD`

@@ -16,6 +16,8 @@ function mapEntry(row: any): MealEntry {
     fat: Number(row.fat),
     carbs: Number(row.carbs),
     notes: row.notes ?? "",
+    favoriteId: row.favorite_id ?? null,
+    grams: row.grams == null ? null : Number(row.grams),
     createdAt: row.created_at
   };
 }
