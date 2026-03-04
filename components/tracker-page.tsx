@@ -93,7 +93,7 @@ export function TrackerPage() {
   const [section, setSection] = useState<SectionMode>("diary");
   const [date, setDate] = useState(today);
   const [entries, setEntries] = useState<MealEntry[]>([]);
-  const [summary, setSummary] = useState<DaySummary | null>(null);
+  const [summary, setSummary] = useState<DaySummary | { from: string; to: string; days: DaySummary[] } | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyMeal);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,6 +129,13 @@ export function TrackerPage() {
   useEffect(() => {
     load();
   }, [date, summaryEndpoint]);
+
+  const weekBalance = useMemo(() => {
+    if (view !== "week" || !summary || !("days" in summary)) return null;
+    return summary.days.reduce((acc, day) => acc + (day.deltaCalories ?? 0), 0);
+  }, [view, summary]);
+
+  const dayLikeSummary = summary && !("days" in summary) ? summary : null;
 
   async function addMeal() {
     try {
@@ -261,16 +268,24 @@ export function TrackerPage() {
                   <div className="space-y-3"><div className="grid grid-cols-2 gap-2">{[...Array(4)].map((_, index) => <Skeleton key={index} className="h-8 rounded-xl" />)}</div><Skeleton className="h-16 rounded-2xl" /><Skeleton className="h-10 rounded-2xl" /></div>
                 ) : error ? (
                   <p className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>
+                ) : view === "week" ? (
+                  <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-5 text-center text-emerald-950">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">Week balance</p>
+                    <p className="mt-2 text-4xl font-semibold leading-none">{weekBalance ?? 0} kcal</p>
+                    {summary && "from" in summary ? (
+                      <p className="mt-2 text-xs text-emerald-800/80">{summary.from} → {summary.to}</p>
+                    ) : null}
+                  </div>
                 ) : (
                   <>
                     <div className="grid grid-cols-2 gap-2">
-                      <Badge variant="secondary" className="justify-center rounded-xl bg-rose-100/70 py-1.5 text-[13px] font-medium text-rose-900">{summary?.totals.calories ?? 0} kcal</Badge>
-                      <Badge variant="secondary" className="justify-center rounded-xl bg-sky-100/70 py-1.5 text-[13px] font-medium text-sky-900">P {summary?.totals.protein ?? 0}g</Badge>
-                      <Badge variant="secondary" className="justify-center rounded-xl bg-amber-100/70 py-1.5 text-[13px] font-medium text-amber-900">F {summary?.totals.fat ?? 0}g</Badge>
-                      <Badge variant="secondary" className="justify-center rounded-xl bg-violet-100/70 py-1.5 text-[13px] font-medium text-violet-900">C {summary?.totals.carbs ?? 0}g</Badge>
+                      <Badge variant="secondary" className="justify-center rounded-xl bg-rose-100/70 py-1.5 text-[13px] font-medium text-rose-900">{dayLikeSummary?.totals.calories ?? 0} kcal</Badge>
+                      <Badge variant="secondary" className="justify-center rounded-xl bg-sky-100/70 py-1.5 text-[13px] font-medium text-sky-900">P {dayLikeSummary?.totals.protein ?? 0}g</Badge>
+                      <Badge variant="secondary" className="justify-center rounded-xl bg-amber-100/70 py-1.5 text-[13px] font-medium text-amber-900">F {dayLikeSummary?.totals.fat ?? 0}g</Badge>
+                      <Badge variant="secondary" className="justify-center rounded-xl bg-violet-100/70 py-1.5 text-[13px] font-medium text-violet-900">C {dayLikeSummary?.totals.carbs ?? 0}g</Badge>
                     </div>
-                    <div className="rounded-2xl bg-emerald-50/80 p-3 text-emerald-900"><p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-700"><Flame className="h-3.5 w-3.5" /> Active calories</p><p className="mt-0.5 text-lg font-semibold leading-tight">{summary?.activeCalories ?? 0} kcal</p></div>
-                    <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-3 py-2.5 text-white"><span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-300">Remaining budget</span><span className="text-lg font-semibold leading-tight">{summary?.deltaCalories ?? 0} kcal</span></div>
+                    <div className="rounded-2xl bg-emerald-50/80 p-3 text-emerald-900"><p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-700"><Flame className="h-3.5 w-3.5" /> Active calories</p><p className="mt-0.5 text-lg font-semibold leading-tight">{dayLikeSummary?.activeCalories ?? 0} kcal</p></div>
+                    <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-3 py-2.5 text-white"><span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-300">Remaining budget</span><span className="text-lg font-semibold leading-tight">{dayLikeSummary?.deltaCalories ?? 0} kcal</span></div>
                   </>
                 )}
               </CardContent>
